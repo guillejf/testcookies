@@ -1,27 +1,44 @@
 const express = require("express");
 const session = require("express-session");
+//const FileStore = require("session-file-store")(session);
+/* const redis = require("redis");
+const client = redis.createClient({
+  legacyMode: true,
+});
+
+client
+  .connect()
+  .then(() => console.log("pude entrar a redis"))
+  .catch((e) => console.log(e)); 
+
+const RedisStore = require("connect-redis")(session);*/
+
+const MongoStore = require("connect-mongo");
 
 const app = express();
 
 app.use(
   session({
+    //store: new FileStore({ path: "./sesiones", ttl: 3600, retries: 5 }),
+    //store: new RedisStore({ host: "127.0.0.1", port: 6379, client, ttl: 300 }),
+    store: MongoStore.create({
+      mongoUrl:
+        "mongodb+srv://guillermofergnani:TH2oBmT6Q6LgNWNn@cluster0.my1pzfu.mongodb.net/",
+      mongoOptions: {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      },
+    }),
+
     secret: "secreto",
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
   })
 );
 
 app.listen(8000, () => {
   console.log(`Example app listening on port http://localhost:8000`);
 });
-
-function auth(req, res, next) {
-  if (req.session?.user === "pepe" && req.session?.admin) {
-    return next();
-  } else {
-    return res.status(401).send("error de autorización!");
-  }
-}
 
 app.get("/", (req, res) => {
   if (req.session.cont) {
@@ -56,6 +73,14 @@ app.get("/login", (req, res) => {
   req.session.admin = true;
   res.send("login success!");
 });
+
+function auth(req, res, next) {
+  if (req.session && req.session.user === "pepe" && req.session.admin) {
+    return next();
+  } else {
+    return res.status(401).send("error de autorización!");
+  }
+}
 
 app.get("/informacionconfidencial", auth, (req, res) => {
   res.send(
